@@ -57,6 +57,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define MIR_NONE UINT32_MAX
 
@@ -303,5 +304,8 @@ uint32_t mir_term_use(const MirTerminator *term);
  *   - every use of a value is preceded by an assignment on every path from
  *     the entry block */
 int mir_verify(const MirModule *module, char *message, size_t message_len);
+
+// Function to dump the MIR for debugging purposes.
+void mir_dump(MirModule *module, FILE * file_descriptor);
 
 #endif /* OPTIFINE_MIR_H */

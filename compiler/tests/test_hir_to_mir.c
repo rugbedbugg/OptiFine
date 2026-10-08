@@ -48,7 +48,7 @@ static void check(const char *what, const IrGraph *g, const int8_t *input, size_
     assert(reuse_analyze(g, &reuse) == 0);
     WorkloadMir w;
     assert(hir_to_mir(g, &layout, &reuse, &g_cm, input, input_len, optimized,
-                      HIR_TO_MIR_INITIALIZE | HIR_TO_MIR_INFER, &w) == 0);
+                      HIR_TO_MIR_INITIALIZE | HIR_TO_MIR_INFER, &w, false) == 0);
     assert(mir_verify(&w.module, msg, sizeof(msg)) == 0);
 
     size_t init_bytes = 0, output_bytes = 0;
@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
         ReuseAnalysis reuse;
         WorkloadMir w;
         assert(sram_layout_build(&ml, &layout) == 0 && reuse_analyze(&ml, &reuse) == 0);
-        assert(hir_to_mir(&ml, &layout, &reuse, &g_cm, ml_input, 15, 0, HIR_TO_MIR_INITIALIZE, &w) != 0);
+        assert(hir_to_mir(&ml, &layout, &reuse, &g_cm, ml_input, 15, 0, HIR_TO_MIR_INITIALIZE, &w, false) != 0);
         reuse_analysis_free(&reuse);
         sram_layout_free(&layout);
         printf("  15-byte input for a 16-byte Input tensor: refused\n");

@@ -26,7 +26,7 @@ static int select_region(const IrGraph *graph, const SramLayout *layout, const R
                          const CostModel *cost_model, const int8_t *input, size_t input_len,
                          int use_real_candidates, unsigned which, AvrMirCode *code) {
     WorkloadMir mir;
-    if (hir_to_mir(graph, layout, reuse, cost_model, input, input_len, use_real_candidates, which, &mir) != 0) {
+    if (hir_to_mir(graph, layout, reuse, cost_model, input, input_len, use_real_candidates, which, &mir, true) != 0) {
         return -1;
     }
     AvrMirLayout avr;
@@ -136,7 +136,7 @@ int codegen_emit_program(const IrGraph *graph, const SramLayout *layout,
 static int constant_data(const IrGraph *graph, const CostModel *cost_model, Candidate *out) {
     /* Objects only: no function is built, so no layout or input is read. */
     WorkloadMir mir;
-    if (hir_to_mir(graph, NULL, NULL, cost_model, NULL, 0, 0, 0, &mir) != 0) return -1;
+    if (hir_to_mir(graph, NULL, NULL, cost_model, NULL, 0, 0, 0, &mir, false) != 0) return -1;
     int rc = avr_mir_select_constants(&mir.module, cost_model, out);
     workload_mir_free(&mir);
     return rc;

@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "optifine/codegen/lower.h"
 #include "optifine/codegen/select.h"
@@ -162,7 +163,7 @@ static int is_initialization(OpKind kind) {
 
 int hir_to_mir(const IrGraph *graph, const SramLayout *layout, const ReuseAnalysis *reuse,
                const CostModel *cost_model, const int8_t *input, size_t input_len, int use_real_candidates,
-               unsigned functions, WorkloadMir *out) {
+               unsigned functions, WorkloadMir *out, bool dump_mir) {
     memset(out, 0, sizeof(*out));
     mir_module_init(&out->module);
     out->initialize = out->infer = out->scratch = out->twiddle = MIR_NONE;
@@ -197,7 +198,9 @@ int hir_to_mir(const IrGraph *graph, const SramLayout *layout, const ReuseAnalys
             if (rc != 0) fprintf(stderr, "hir_to_mir: failed to lower op %zu\n", i);
         }
         if (rc == 0) mir_ret(m, out->infer, b, mir_none());
+        if(dump_mir) mir_dump(m, stdout);
     }
+
     char message[256];
     if (rc == 0 && mir_verify(m, message, sizeof(message)) != 0) {
         fprintf(stderr, "hir_to_mir: produced invalid MIR: %s\n", message);

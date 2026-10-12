@@ -2,6 +2,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdbool.h>
+
+#define DUMP_MIR false
 
 size_t mir_int_bytes(MirType type) {
     switch (type) {
@@ -319,4 +323,146 @@ void mir_cbr(MirModule *m, uint32_t fn, uint32_t block, MirOperand cond, uint32_
 void mir_ret(MirModule *m, uint32_t fn, uint32_t block, MirOperand value) {
     MirTerminator t = {MIR_TERM_RET, mir_none(), MIR_NONE, MIR_NONE, value};
     mir_set_terminator(m, fn, block, &t);
+}
+
+char* mir_dump_mem_kind(MirMemKind mem_kind) {
+    switch (mem_kind) {
+    case MIR_MEM_GLOBAL:
+        return "Global";
+    case MIR_MEM_STACK:
+        return "Stack";
+    case MIR_MEM_SCRATCH:
+        return "Scratch";
+    case MIR_MEM_CONST:
+        return "Constant";
+    case MIR_MEM_TENSOR:
+        return "Tensor";
+    }
+}
+
+char* mir_dump_type(MirType type) {
+    switch (type) {
+    case MIR_TYPE_VOID:
+        return "Void";
+    case MIR_TYPE_I8:
+        return "I8";
+    case MIR_TYPE_I16:
+        return "I16";
+    case MIR_TYPE_I32:
+        return "I32";
+    case MIR_TYPE_PTR:
+        return "Ptr";
+    }
+}
+
+char* mir_dump_opcode(MirOpcode op) {
+    switch (op) {
+    case MIR_CONST  : return "CONST";
+    case MIR_COPY   : return "COPY";
+    case MIR_ADD    : return "ADD";
+    case MIR_SUB    : return "SUB";
+    case MIR_MUL    : return "MUL";
+    case MIR_AND    : return "AND";
+    case MIR_OR     : return "OR";
+    case MIR_XOR    : return "XOR";
+    case MIR_CMP    : return "CMP";
+    case MIR_ZEXT   : return "ZEXT";
+    case MIR_SEXT   : return "SEXT";
+    case MIR_TRUNC  : return "TRUNC";
+    case MIR_LOAD   : return "LOAD";
+    case MIR_STORE  : return "STORE";
+    case MIR_ADDR   : return "ADDR";
+    case MIR_TARGET : return "TARGET";
+    case MIR_PTR_ADD : return "PTR_ADD";
+    }
+}
+
+char* mir_dump_operand_kind(MirOperandKind opk) {
+    switch(opk) {
+    case MIR_OPND_NONE: return "OPND_NONE";
+    case MIR_OPND_VALUE: return "OPND_VALUE";
+    case MIR_OPND_IMM: return "OPND_IMM";
+    }
+}
+
+char* mir_dump_pred(MirCmpPred cmp) {
+    switch (cmp) {
+    case MIR_CMP_EQ: return "CMP_EQ";
+    case MIR_CMP_NE: return "CMP_NE";
+    case MIR_CMP_ULT: return "CMP_ULT";
+    case MIR_CMP_SLT: return "CMP_SLT";
+    }
+}
+
+char* mir_dump_term_kind(MirTermKind k){
+    switch(k) {
+    case MIR_TERM_NONE: return "TERM_NONE";
+    case MIR_TERM_BR: return "TERM_BR";
+    case MIR_TERM_CBR: return "TERM_CBR";
+    case MIR_TERM_RET: return "TERM_RET";
+    }
+}
+
+void mir_dump_operand(MirOperand oper, FILE * fd) {
+    if (oper.kind == MIR_OPND_NONE) {
+        return;   
+    }
+    fprintf(fd, "        Kind:  %s\n", mir_dump_operand_kind(oper.kind));
+    fprintf(fd, "        Value: %d\n", oper.value);
+    fprintf(fd, "        Imm:   %lld\n", oper.imm);
+}
+
+void mir_dump_block(MirBlock *block, FILE * fd) {
+    for(size_t i=0; i<block->count; i++) {
+        fprintf(fd, "    Inst:\n");
+        MirInst inst = block->insts[i];
+        fprintf(fd, "      Op: %s\n", mir_dump_opcode(inst.op));
+        fprintf(fd, "      Type: %s\n", mir_dump_type(inst.type));
+        fprintf(fd, "      Result Value: %u\n", inst.dst);
+        fprintf(fd, "      Operand a: \n");
+        mir_dump_operand(inst.a, fd);
+        fprintf(fd, "      Operand b: \n");
+        mir_dump_operand(inst.b, fd);
+        fprintf(fd, "      Pred: %s\n", mir_dump_pred(inst.pred));
+        fprintf(fd, "      Addr: Obj - %d, Ptr - %d, Offset - %d \n", inst.addr.object, inst.addr.pointer, inst.addr.offset);
+    }
+
+    fprintf(fd, "    Terminator:\n");
+    fprintf(fd, "      Kind: %s\n", mir_dump_term_kind(block->term.kind));
+    fprintf(fd, "      Cond: \n");
+    mir_dump_operand(block->term.cond, fd);
+    fprintf(fd, "      Then Block: %d\n", block->term.then_block);
+    fprintf(fd, "      Else Block: %d\n", block->term.else_block);
+    fprintf(fd, "      Return Op:\n");
+    mir_dump_operand(block->term.value, fd);
+}
+
+void mir_dump(MirModule *module, FILE * fd) {
+    if(!DUMP_MIR) return;
+    fprintf(fd, "%zu memory objects:\n", module->num_objects);
+    for(size_t i=0; i<module->num_objects; i++) {
+        MirMemObject *mem_obj = &module->objects[i];
+        fprintf(fd, "  Name:            %s\n", mem_obj->name);
+        fprintf(fd, "  Kind:            %s\n", mir_dump_mem_kind(mem_obj->kind));
+        fprintf(fd, "  Size:            %zu\n", mem_obj->size);
+        fprintf(fd, "  Owning Function: %s\n", mem_obj->kind == MIR_MEM_STACK ? module->functions[mem_obj->function].name : "None");
+        fprintf(fd, "\n");
+    }
+
+    fprintf(fd, "%zu functions:\n", module->num_functions);
+    for(size_t i=0; i<module->num_functions; i++) {
+        MirFunction *func = &module->functions[i];
+        fprintf(fd, "  Name:        %s\n", func->name);
+        fprintf(fd, "  Return Type: %s\n", mir_dump_type(func->return_type));
+        fprintf(fd, "  Value Type\n");
+        for(size_t i=0; i<func->num_values; i++) {
+            fprintf(fd, "    for %zu: %s\n", i, mir_dump_type(func->value_types[i]));
+        }
+        fprintf(fd, "  Number of Params: %zu\n", func->num_params);
+        for(size_t i=0; i<func->num_blocks; i++) {
+            fprintf(fd, "   Block %zu:\n", i);
+            mir_dump_block(&func->blocks[i], fd);
+        }
+    }
+    fprintf(fd, "\n");
 }

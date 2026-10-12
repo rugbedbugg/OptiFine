@@ -30,6 +30,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "optifine/codegen/avr_mir.h"
 #include "optifine/codegen/candidates.h"
@@ -58,7 +59,7 @@ enum { HIR_TO_MIR_INITIALIZE = 1, HIR_TO_MIR_INFER = 2 };
  * or -1 with a diagnostic. */
 int hir_to_mir(const IrGraph *graph, const SramLayout *layout, const ReuseAnalysis *reuse,
                const CostModel *cost_model, const int8_t *input, size_t input_len, int use_real_candidates,
-               unsigned functions, WorkloadMir *out);
+               unsigned functions, WorkloadMir *out, bool dump_mir);
 void workload_mir_free(WorkloadMir *mir);
 
 /* The backend layout for a workload module: tensors and scratch at the

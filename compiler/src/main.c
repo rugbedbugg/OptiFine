@@ -15,6 +15,13 @@
 #include "optifine/ingest.h"
 #include "optifine/ir.h"
 #include "optifine/ir_verify.h"
+#include "optifine/frontend/c_frontend.h"
+
+#define STB_C_LEXER_IMPLEMENTATION
+#define STB_DS_IMPLEMENTATION
+
+#include "stb_c_lexer.h"
+#include "stb_ds.h"
 
 static void usage(const char *argv0) {
     fprintf(stderr,
@@ -230,6 +237,24 @@ static int run_dsp(const char *cost_table_path, const char *input_path, const ch
     return rc == 0 ? 0 : 1;
 }
 
+int compile_c_file(const char* input_fp, const char* output_fp) {
+   FILE *f = fopen(input_fp,"rb");
+   char *text = (char *) malloc(1 << 20);
+   int len = f ? (int) fread(text, 1, 1<<20, f) : -1;
+   if (len < 0) {
+      fprintf(stderr, "Error opening file\n");
+      free(text);
+      fclose(f);
+      return 1;
+   }
+   fclose(f);
+   printf("File:\n%s", text);
+   CompilerState s = {0};
+   frontend_c_init_state(&s, text, len);
+   frontend_c_compile_file(&s);
+   return 0;
+}
+
 int main(int argc, char **argv) {
     const char *model_path = NULL;
     const char *cost_table_path = "cost_table.toml";
@@ -286,6 +311,9 @@ int main(int argc, char **argv) {
             }
             periodic_options.timer_prescaler = (uint16_t)value;
             timer_prescaler_seen = 1;
+        } else if (strcmp(argv[i], "--cc") == 0 && i + 1 < argc) {
+            const char *c_source_file = argv[++i];
+            return compile_c_file(c_source_file, out_path);
         } else if (!model_path) {
             model_path = argv[i];
         } else {

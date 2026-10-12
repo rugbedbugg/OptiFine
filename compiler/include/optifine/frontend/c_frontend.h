@@ -1,5 +1,7 @@
 #include <stdbool.h>
+#include <stdint.h>
 
+#include "optifine/mir.h"
 #include "stb_c_lexer.h"
 #include "stb_ds.h"
 
@@ -22,7 +24,8 @@ typedef struct {
 
 typedef struct {
     stb_lexer lex;
-    CompilerVariable* da_variables;
+    CompilerVariable *da_variables;
+    MirModule *mir;
 } CompilerState;
 
 void frontend_c_init_state(CompilerState* s, char* input_buf, int input_buf_len);

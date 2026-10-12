@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#define DUMP_MIR false
+#define DUMP_MIR true
 
 size_t mir_int_bytes(MirType type) {
     switch (type) {
